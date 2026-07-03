@@ -126,6 +126,12 @@ def test_evaluate_endpoint_writes_under_confined_artifact_root_and_verify_preser
     run_dir = Path(evaluate_body["result"]["run_dir"])
     assert run_dir.resolve().relative_to(file_drop.ARTIFACT_ROOT.resolve())
     assert run_dir == file_drop.ARTIFACT_ROOT / "franka-golden"
+    assert evaluate_body["result"] == json.loads(evaluate_body["stdout"])
+    assert evaluate_body["display_artifacts"] == {
+        "buyer_report_html": str(run_dir / "reports" / "buyer_report.html"),
+        "buyer_report_json": str(run_dir / "reports" / "buyer_report.json"),
+        "package_manifest": str(run_dir / "package_manifest.json"),
+    }
 
     verify_response = client.post("/api/file-drop/verify", json={"run_path": str(run_dir), "deep_hdf5": True})
 
@@ -136,6 +142,36 @@ def test_evaluate_endpoint_writes_under_confined_artifact_root_and_verify_preser
     assert verify_body["result"]["verdict"] == "VERIFIED"
     assert verify_body["result"]["ok"] is True
     assert verify_body["trust_source"] == "verifier_exit_code_and_json"
+    assert verify_body["result"] == json.loads(verify_body["stdout"])
+    assert "display_artifacts" not in verify_body["result"]
+    assert verify_body["display_artifacts"] == {
+        "buyer_report_html": str(run_dir / "reports" / "buyer_report.html"),
+        "buyer_report_json": str(run_dir / "reports" / "buyer_report.json"),
+        "package_manifest": str(run_dir / "package_manifest.json"),
+    }
+
+
+def test_rejected_evaluate_response_exposes_rejection_reasons_and_buyer_report_path(tmp_path: Path, monkeypatch) -> None:
+    client = _client(tmp_path, monkeypatch)
+    drop_dir = tmp_path / "drops" / "missing-metadata"
+    drop_dir.mkdir(parents=True)
+    (drop_dir / "rtde_output.csv").write_text(
+        "timestamp_s,tcp_x_m,tcp_y_m,tcp_z_m,rx_rad,ry_rad,rz_rad,gripper_width_m\n0.0,0.1,0.2,0.3,0.0,0.0,0.0,0.04\n",
+        encoding="utf-8",
+    )
+
+    payload = {"input_path": str(drop_dir), "profile_id": "ur_rtde_csv_v0", "run_id": "rejected-missing-metadata"}
+
+    response = client.post("/api/file-drop/evaluate", json=payload)
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["ok"] is False
+    assert body["result"]["passed"] is False
+    assert "schema_missing_required_artifact" in body["result"]["rejection_reasons"]
+    assert body["result"] == json.loads(body["stdout"])
+    run_dir = file_drop.ARTIFACT_ROOT / "rejected-missing-metadata"
+    assert body["display_artifacts"]["buyer_report_html"] == str(run_dir / "reports" / "buyer_report.html")
 
 
 def test_evaluate_rejects_path_traversal_run_id(tmp_path: Path, monkeypatch) -> None:

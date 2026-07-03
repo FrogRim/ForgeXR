@@ -64,7 +64,23 @@ http://127.0.0.1:3000/file-drop
 
 ## Pake wrapper
 
-Pake를 설치하지 않고 `npx`로 실행하는 smoke command:
+Repo-local wrapper는 `scripts/run_pake_file_drop_shell.sh`다. 기본값은
+`http://127.0.0.1:3000/file-drop`만 감싼다.
+
+CI 또는 headless 환경에서는 `--smoke`로 실제 Pake를 실행하지 않고 같은 argv를
+출력한다.
+
+```bash
+bash scripts/run_pake_file_drop_shell.sh --smoke
+```
+
+실제 local desktop shell을 띄우는 command:
+
+```bash
+bash scripts/run_pake_file_drop_shell.sh
+```
+
+wrapper가 실행하는 Pake command:
 
 ```bash
 npx pake-cli http://127.0.0.1:3000/file-drop \
@@ -74,6 +90,11 @@ npx pake-cli http://127.0.0.1:3000/file-drop \
   --min-width 1040 \
   --min-height 720
 ```
+
+wrapper는 URL을 parse한 뒤 `scheme=http`, `hostname=127.0.0.1` 또는
+`hostname=localhost`, explicit port `1..65535`, no userinfo 조건을 모두
+통과할 때만 허용한다. `http://127.0.0.1:3000@evil.example/...` 같은
+userinfo bypass와 원격 backend, broad CORS를 열기 위한 옵션은 제공하지 않는다.
 
 macOS에서 설치형 DMG 대신 local `.app` smoke가 필요하면 Pake 문서 기준으로 다음 환경 변수를 사용할 수 있다.
 
@@ -103,13 +124,33 @@ generic_command_state_jsonl_v0
 
 ## Smoke check
 
-1. `/file-drop`에서 profile list가 보이는지 확인한다.
-2. `scripts/rdf_file_drop_evaluator.py profiles list --json` 결과와 profile 수가 같은지 확인한다.
-3. tiny golden drop path를 넣고 `Preflight`를 실행한다.
-4. `Evaluate`를 실행한다.
-5. `run_dir`가 verify input으로 들어갔는지 확인한다.
-6. `Verify package`를 실행한다.
-7. 최종 `Verifier` panel에만 녹색 `VERIFIED`가 보이는지 확인한다.
+1. Backend를 `127.0.0.1:8000`에서 시작한다.
+2. Web UI를 `127.0.0.1:3000`에서 시작한다.
+3. `bash scripts/run_pake_file_drop_shell.sh --smoke`가 loopback Pake argv를 출력하는지 확인한다.
+4. `/file-drop`에서 profile select가 보이는지 확인한다.
+5. `Input folder or zip path`에 folder 또는 zip path를 입력한다.
+6. `Preflight`를 실행하고 CLI exit/result JSON이 표시되는지 확인한다.
+7. `Evaluate`를 실행하고 `run_dir`, `package_manifest`, `buyer_report.html`, `buyer_report.json` path가 표시되는지 확인한다.
+8. `run_dir`가 verify input으로 들어갔는지 확인한다.
+9. `Verify package`를 실행한다.
+10. 최종 `Verifier` panel에서 verifier payload가 `verdict: VERIFIED`일 때만 `PACKAGE VERIFIED / DATA ACCEPTED` 또는 `PACKAGE VERIFIED / DATA REJECTED`로 표시되는지 확인한다.
+
+Accepted sample의 표시 기대값:
+
+```text
+status: PACKAGE VERIFIED / DATA ACCEPTED
+result.passed: true
+buyer_report_html: <run_dir>/reports/buyer_report.html
+```
+
+Rejected sample의 표시 기대값:
+
+```text
+status: PACKAGE VERIFIED / DATA REJECTED
+result.passed: false
+rejection_reasons: verifier/evaluator JSON payload 그대로 표시
+buyer_report_html: <run_dir>/reports/buyer_report.html
+```
 
 ## Stop conditions
 

@@ -170,6 +170,24 @@ def _artifact_path(path_value: str) -> Path:
     return resolved
 
 
+def _run_dir_from_artifact_path(target: Path) -> Path:
+    if target.is_file():
+        return target.parent
+    return target
+
+
+def _display_artifacts(run_dir: Path) -> dict[str, str]:
+    return {
+        "buyer_report_html": str(run_dir / "reports" / "buyer_report.html"),
+        "buyer_report_json": str(run_dir / "reports" / "buyer_report.json"),
+        "package_manifest": str(run_dir / "package_manifest.json"),
+    }
+
+
+def _with_display_artifacts(response: dict, run_dir: Path) -> dict:
+    return {**response, "display_artifacts": _display_artifacts(run_dir)}
+
+
 @router.get("/profiles")
 def list_profiles() -> dict:
     return _run_cli_bridge(["profiles", "list", "--json"], trust_source="cli_exit_code_and_json")
@@ -205,7 +223,8 @@ def evaluate_file_drop(payload: EvaluateRequest) -> dict:
     ]
     if payload.force:
         argv.insert(-1, "--force")
-    return _run_cli_bridge(argv, trust_source="cli_exit_code_and_json")
+    response = _run_cli_bridge(argv, trust_source="cli_exit_code_and_json")
+    return _with_display_artifacts(response, out_dir)
 
 
 @router.post("/verify")
@@ -214,4 +233,5 @@ def verify_file_drop_run(payload: VerifyRequest) -> dict:
     argv = ["verify", str(target), "--json"]
     if payload.deep_hdf5:
         argv.insert(-1, "--deep-hdf5")
-    return _run_cli_bridge(argv, trust_source="verifier_exit_code_and_json")
+    response = _run_cli_bridge(argv, trust_source="verifier_exit_code_and_json")
+    return _with_display_artifacts(response, _run_dir_from_artifact_path(target))
