@@ -23857,3 +23857,403 @@ uv run python scripts/verify_mvp5a_pre_file_drop_chaos_rehearsal_package.py docs
 - 실제 external/partner robot log는 아직 평가하지 않았다.
 - MVP-5B alpha + review blocker closures는 커밋 전 검수 기준을 충족했다.
 - 다음 단계는 Lore protocol 기준 커밋 분리, push/PR, CI 확인이다.
+
+## 2026-06-27 - MVP-5B committed sample corpus v0
+
+### 작업 내용
+
+- MVP-5B file-drop evaluator를 사용자가 바로 넣어볼 수 있는 committed sample corpus를 추가했다.
+- `ur_rtde_csv_v0` 기준 accepted / rejected 최소 샘플을 고정했다.
+- committed sample이 CLI evaluate + independent verifier를 실제로 통과/거부하는지 회귀 테스트를 추가했다.
+
+### 판단 이유
+
+- blind clean-checkout dry run은 `write_golden_profile_drop`로 fixture를 생성해 통과했지만, 사용자가 desktop shell이나 CLI에 바로 넣어볼 committed folder sample은 없었다.
+- Pake/desktop smoke와 partner-intake UX를 검증하려면 생성기 호출 없이 사용할 수 있는 작고 명시적인 sample corpus가 필요하다.
+- sample은 actual partner data가 아니므로 `generated_by_rdf_sim=true`, `external_partner_data=false` 경계를 유지한다.
+
+### 변경 파일
+
+```text
+apps/api/tests/test_mvp5b_file_drop_evaluator_corpus.py
+docs/partner_intake/README.md
+docs/partner_intake/sample_drops/README.md
+docs/partner_intake/sample_drops/ur_rtde_csv_v0/accepted_minimal/metadata.json
+docs/partner_intake/sample_drops/ur_rtde_csv_v0/accepted_minimal/rtde_output.csv
+docs/partner_intake/sample_drops/ur_rtde_csv_v0/rejected_missing_metadata/rtde_output.csv
+Handoff.md
+docs/developer/worklog.md
+```
+
+### 실행한 검증 명령과 결과
+
+RED:
+
+```text
+uv run pytest -q apps/api/tests/test_mvp5b_file_drop_evaluator_corpus.py::test_committed_sample_drops_cover_accept_and_reject_paths
+  -> failed, docs/partner_intake/sample_drops/README.md missing
+```
+
+GREEN:
+
+```text
+uv run pytest -q apps/api/tests/test_mvp5b_file_drop_evaluator_corpus.py::test_committed_sample_drops_cover_accept_and_reject_paths
+  -> 1 passed
+
+uv run pytest -q apps/api/tests/test_mvp5b_file_drop_evaluator_corpus.py
+  -> 58 passed
+```
+
+### 남은 gap 또는 다음 작업
+
+- committed sample corpus는 actual external/partner robot log가 아니다.
+- 다음 단계는 이 sample corpus로 desktop shell e2e와 Pake packaged smoke를 수행하는 것이다.
+
+## 2026-07-02 - LinkedIn posts 16-19 upload recorded
+
+### 작업 내용
+
+- LinkedIn `post16`, `post17`, `post18`, `post19` 업로드 사실을 세션 handoff에 기록했다.
+- post16-19 시리즈의 현재 의미와 claim boundary를 다음 세션이 이어받을 수 있게 정리했다.
+
+### 판단 이유
+
+- post16은 MVP-5A digital-twin file-drop chaos rehearsal을 설명하는 글이다.
+- post17은 MVP-5A verifier-backed ready boundary를 설명하는 글이다.
+- post18은 MVP-5B CLI/verifier file-drop evaluator를 설명하는 글이다.
+- post19는 MVP-5B local desktop shell과 partner intake kit을 설명하는 글이다.
+- 글 업로드 상태는 코드 산출물은 아니지만, 프로젝트 외부 커뮤니케이션 흐름과 다음 post/asset 판단에 영향을 준다.
+- 향후 post나 demo asset에서 실제 external/partner robot log 평가 claim이 새어 나가지 않도록 non-claim boundary를 handoff에 남겼다.
+
+### 변경 파일
+
+```text
+Handoff.md
+docs/developer/worklog.md
+```
+
+### 실행한 검증 명령과 결과
+
+```text
+find postwrite -maxdepth 1 -type f -name 'post1[6-9]*.md'
+  -> post16, post17, post18, post19 draft files present
+```
+
+### 남은 gap 또는 다음 작업
+
+- post16-19 업로드는 product proof나 verifier evidence가 아니다.
+- 실제 external/partner robot log는 아직 평가하지 않았다.
+- 다음 engineering step은 committed sample corpus commit, desktop shell e2e, Pake packaged smoke다.
+
+## 2026-07-02 - init-deep AGENTS hierarchy generated
+
+### 작업 내용
+
+- `$omo:init-deep` 요청에 따라 repository structure, entrypoint, convention, test/build surface를 조사했다.
+- root `AGENTS.md`에 generated project knowledge base를 추가했다.
+- active source/documentation boundary별 하위 `AGENTS.md`를 생성했다.
+
+### 판단 이유
+
+- 기존 durable `AGENTS.md`는 root 1개뿐이어서 `apps/api`, `apps/web`, `scripts`, `docs`, `packages/shared`의 서로 다른 작업 규칙이 하위 경로에서 분리되지 않았다.
+- `storage`, `artifacts`, `.omx`, `.omc`, `tasks`는 source ownership보다 runtime/evidence/planning 성격이 강해서 별도 하위 `AGENTS.md` 생성을 보류했다.
+- 기존 root project contract는 삭제하지 않고 보존했다. 대신 root 하단에 repo map, command map, code map, anti-pattern을 추가했다.
+
+### 변경 파일
+
+```text
+AGENTS.md
+apps/api/AGENTS.md
+apps/web/AGENTS.md
+scripts/AGENTS.md
+docs/AGENTS.md
+packages/shared/AGENTS.md
+Handoff.md
+docs/developer/worklog.md
+```
+
+### 실행한 검증 명령과 결과
+
+```text
+git diff --check
+  -> passed
+
+find . -path './node_modules' -prune -o -path './apps/web/node_modules' -prune -o -path './.git' -prune -o -name AGENTS.md -print | sort
+  -> root durable AGENTS plus apps/api, apps/web, docs, packages/shared, scripts AGENTS present
+  -> .omx/state/sessions/*/AGENTS.md are runtime/session artifacts only
+
+wc -l AGENTS.md apps/api/AGENTS.md apps/web/AGENTS.md scripts/AGENTS.md docs/AGENTS.md packages/shared/AGENTS.md
+  -> root 285 lines; child AGENTS 37-64 lines
+
+rg -n "Current dirty|should I proceed|external partner robot log has been evaluated|real robot validated" AGENTS.md apps/api/AGENTS.md apps/web/AGENTS.md scripts/AGENTS.md docs/AGENTS.md packages/shared/AGENTS.md
+  -> no matches
+```
+
+### 남은 gap 또는 다음 작업
+
+- 이번 작업은 instruction/documentation hierarchy 변경만 포함한다. pytest, frontend build, API smoke는 실행하지 않았다.
+- root `AGENTS.md`는 기존 project contract를 보존해서 150 line init-deep target보다 길다. 하위 AGENTS는 30-80 line 범위를 지킨다.
+- pending MVP-5B sample corpus 관련 미커밋 변경은 그대로 보존했다.
+
+## 2026-07-02 - pre-real-log evaluator release-candidate checklist
+
+### 작업 내용
+
+- Todo 8 release-candidate checklist를 `docs/developer/pre_real_log_evaluator_release_candidate_checklist.md`에 추가했다.
+- candidate tag name을 `pre-real-log-evaluator-v0`로 기록하되 실제 tag 생성, push, publish는 수행하지 않았다.
+- Todos 1-7 evidence receipt, required command, current result를 checklist에 연결했다.
+- 현재 `git status --short` dirty paths를 Todo/evidence/scope로 분류하고 unclassified product file이 없도록 기록했다.
+- Todo 8 command transcript를 `.omo/evidence/task-8-pre-real-log-evaluator-product-ready.log`에 저장했다.
+
+### 판단 이유
+
+- release candidate는 taggable evidence package이지 release action이 아니므로 `git tag` 생성은 사용자의 future explicit command로만 남겼다.
+- prior clean-checkout evidence는 최종 receipt의 `DRY_RUN_RESULT=PASS`, `FAILS=0`만 readiness evidence로 사용하고, 초기 실패는 repair history로만 취급했다.
+- claim-boundary scanner가 bare forbidden phrase list를 positive claim으로 해석하므로 checklist non-claim list를 `non-claims:` block으로 정리했다.
+
+### 변경 파일
+
+```text
+Handoff.md
+docs/developer/pre_real_log_evaluator_release_candidate_checklist.md
+docs/developer/worklog.md
+.omo/evidence/task-8-pre-real-log-evaluator-product-ready.log
+```
+
+### 실행한 검증 명령과 결과
+
+```text
+git tag --list | rg '^pre-real-log-evaluator-v0$'
+  -> exit 1, stdout empty; tag does not exist and was not created
+
+uv run python scripts/scan_pre_real_log_claim_boundaries.py docs apps/web scripts README.md docs/developer/pre_real_log_evaluator_release_candidate_checklist.md --json
+  -> exit 0, ok=true, issue_count=0, scanned_file_count=128
+
+git diff --check -- docs/developer/pre_real_log_evaluator_release_candidate_checklist.md docs/developer/worklog.md Handoff.md
+  -> exit 0
+
+git status --short
+  -> dirty paths remain because Todos 1-7 release-scope work and generated AGENTS guidance are uncommitted; checklist classifies all visible paths
+```
+
+### 남은 gap 또는 다음 작업
+
+- Todo 8는 tag를 만들지 않았다.
+- Todo 9에서 final all-gates verification, final worklog/handoff closeout, and release commit/tag decision을 별도 수행해야 한다.
+- 실제 external/partner robot log, real robot run, hardware/live runtime, production, marketplace, policy uplift claim은 아직 열지 않았다.
+
+## 2026-07-02 - pre-real-log evaluator Todo 9 final all-gates closeout
+
+### 작업 내용
+
+- Todo 9 final all-gates verification을 실행하고 transcript를 `.omo/evidence/task-9-pre-real-log-evaluator-product-ready.log`에 저장했다.
+- Todo 5 blind clean-checkout dry-run을 기존 pinned temporary candidate repo에서 안전하게 재실행했다.
+- release checklist, worklog, Handoff에 final command result, evidence path, residual risk, next action을 기록했다.
+- tag 생성, stage, commit, push, publish는 수행하지 않았다.
+
+### 판단 이유
+
+- 현재 worktree는 Todos 1-8 release-scope 변경이 uncommitted 상태라 `HEAD`가 candidate state를 대표하지 않는다.
+- `scripts/blind_clean_checkout_dry_run.sh`는 clean git ref를 요구하므로, 새 commit/tag를 만들지 않고 Todo 5에서 승인된 pinned candidate repo
+  `/var/tmp/rdf_todo5_followup_candidate.E0CDBL/repo`의 SHA `3fa3d496ac78bcc4de91b799bdc4e9729e3b8a3b`를 재사용해 rerun했다.
+- final claim은 pre-real-log local file-drop readiness로만 제한하고, real/external/hardware/live/production/marketplace/policy uplift claim은 열지 않았다.
+
+### 변경 파일
+
+```text
+Handoff.md
+docs/developer/pre_real_log_evaluator_release_candidate_checklist.md
+docs/developer/worklog.md
+.omo/evidence/task-9-pre-real-log-evaluator-product-ready.log
+.omo/evidence/pre-real-log-clean-checkout-receipt.txt
+```
+
+### 실행한 검증 명령과 결과
+
+```text
+uv run pytest -q apps/api/tests/test_mvp5b_file_drop_evaluator_cli.py apps/api/tests/test_mvp5b_file_drop_evaluator_security.py apps/api/tests/test_mvp5b_file_drop_evaluator_corpus.py apps/api/tests/test_verify_rdf_file_drop_evaluator_run.py apps/api/tests/test_file_drop_api_bridge.py apps/api/tests/test_mvp5a_pre_frozen_verifier_regressions.py apps/api/tests/test_pre_real_log_claim_boundary_scanner.py
+  -> exit 0; 140 passed, 1 warning
+
+uv run python -m compileall -q apps/api/app apps/api/tests scripts
+  -> exit 0
+
+uvx ruff check scripts apps/api
+  -> exit 0; All checks passed
+
+cd apps/web && npm run lint && npm run build
+  -> exit 0; Next.js build completed
+
+env RDF_BLIND_DRY_RUN_ALLOWED_ORIGINAL_WRITE=.omo/evidence/task-9-pre-real-log-evaluator-product-ready.log bash scripts/blind_clean_checkout_dry_run.sh 3fa3d496ac78bcc4de91b799bdc4e9729e3b8a3b /var/tmp/rdf_todo5_followup_candidate.E0CDBL/repo
+  -> exit 0; DRY_RUN_RESULT=PASS; FAILS=0
+
+uv run python scripts/scan_pre_real_log_claim_boundaries.py docs apps/web scripts README.md docs/developer/pre_real_log_evaluator_release_candidate_checklist.md --json
+  -> exit 0; ok=true; issue_count=0; scanned_file_count=128
+
+git tag --list | rg '^pre-real-log-evaluator-v0$'
+  -> exit 1; expected absence; no tag named pre-real-log-evaluator-v0 exists
+```
+
+Evidence:
+
+```text
+.omo/evidence/task-9-pre-real-log-evaluator-product-ready.log
+.omo/evidence/pre-real-log-clean-checkout-receipt.txt
+```
+
+Code-review / slop / manual QA artifact 상태:
+
+```text
+Todo 9 did not edit product code.
+Prior Todo 3-8 code-review, slop, gate-review, manual-QA receipts remain the relevant product-surface review artifacts.
+Todo 9 manual/e2e surface evidence is the final blind clean-checkout dry-run rerun plus the final claim-boundary scan transcript.
+```
+
+### 남은 gap 또는 다음 작업
+
+- 실제 external/partner robot log는 아직 평가하지 않았다.
+- 실제 robot run, hardware readiness, live UR/RTDE, live Franka, live ROS2/DDS bridge, policy uplift, production readiness, marketplace readiness는 검증하지 않았다.
+- 다음 작업은 classified `todo_*_release_scope` 파일을 Lore protocol 기준으로 commit 분리하는 것이다.
+- `pre-real-log-evaluator-v0` tag 생성/push/publish는 사용자의 별도 명시 명령이 있을 때만 수행한다.
+
+## 2026-07-02 - review-work blocker closure: Pake URL boundary and durable clean-checkout proof
+
+### 작업 내용
+
+- `scripts/run_pake_file_drop_shell.sh`의 local URL allowlist를 prefix match에서 parsed URL 검증으로 변경했다.
+- `apps/api/tests/test_pake_file_drop_shell.py`를 추가해 loopback URL, userinfo bypass, malformed URL, missing/invalid port, port `0` reject를 검증했다.
+- clean-checkout proof의 current source를 `.omo/evidence/pre-real-log-current-candidate.git` durable bare candidate repo로 바꿨다.
+- release checklist, Pake runbook, Handoff를 current evidence 기준으로 갱신했다.
+- tag 생성, stage, commit, push, publish는 수행하지 않았다.
+
+### 판단 이유
+
+- `http://127.0.0.1:3000@evil.example/file-drop` 같은 URL은 prefix로는 local처럼 보이지만 parsed hostname은 remote host이므로 fail-closed 해야 한다.
+- 기존 clean-checkout proof는 temporary candidate repo를 current final proof처럼 참조해 release evidence durability 기준을 만족하지 못했다.
+- 현재 worktree는 사용자가 승인한 release-scope 변경과 out-of-scope generated guidance가 섞인 dirty state이므로, active repo history를 바꾸지 않고 별도 bare candidate repo에만 검증용 local commit을 만들었다.
+
+### 변경 파일
+
+```text
+scripts/run_pake_file_drop_shell.sh
+apps/api/tests/test_pake_file_drop_shell.py
+docs/desktop/pake_file_drop_evaluator_alpha.md
+docs/developer/pre_real_log_evaluator_release_candidate_checklist.md
+docs/developer/worklog.md
+Handoff.md
+.omo/evidence/ulw-pake-url-red.txt
+.omo/evidence/ulw-pake-loopback-green.txt
+.omo/evidence/ulw-pake-userinfo-reject-green.txt
+.omo/evidence/ulw-pake-regression-tests.txt
+.omo/evidence/pre-real-log-current-candidate.git
+.omo/evidence/pre-real-log-clean-checkout-receipt.txt
+```
+
+### 실행한 검증 명령과 결과
+
+```text
+bash scripts/run_pake_file_drop_shell.sh --url http://127.0.0.1:3000@evil.example/file-drop --smoke
+bash scripts/run_pake_file_drop_shell.sh --url http://localhost:3000@evil.example/file-drop --smoke
+  -> RED before fix: both exited 0 and printed Pake smoke command
+
+uv run pytest -q apps/api/tests/test_pake_file_drop_shell.py
+  -> exit 0; 10 passed
+
+bash -n scripts/run_pake_file_drop_shell.sh
+  -> exit 0
+
+uvx ruff check apps/api/tests/test_pake_file_drop_shell.py
+  -> exit 0; All checks passed
+
+uv run python -m compileall -q apps/api/tests/test_pake_file_drop_shell.py
+  -> exit 0
+
+bash scripts/run_pake_file_drop_shell.sh --url http://127.0.0.1:3000/file-drop --smoke
+bash scripts/run_pake_file_drop_shell.sh --url http://localhost:3000/file-drop --smoke
+  -> exit 0; Pake smoke command printed; no Pake/npx process launched
+
+bash scripts/run_pake_file_drop_shell.sh --url http://127.0.0.1:3000@evil.example/file-drop --smoke
+bash scripts/run_pake_file_drop_shell.sh --url http://localhost:3000@evil.example/file-drop --smoke
+bash scripts/run_pake_file_drop_shell.sh --url http://127.0.0.1:0/file-drop --smoke
+  -> exit 2; Refusing non-local Pake URL; no Pake smoke command printed
+
+bash scripts/blind_clean_checkout_dry_run.sh <current-candidate-sha> .omo/evidence/pre-real-log-current-candidate.git
+  -> exit 0; source_repo_path is under .omo/evidence; DRY_RUN_RESULT=PASS; FAILS=0
+```
+
+Evidence:
+
+```text
+.omo/evidence/ulw-pake-url-red.txt
+.omo/evidence/ulw-pake-loopback-green.txt
+.omo/evidence/ulw-pake-userinfo-reject-green.txt
+.omo/evidence/ulw-pake-regression-tests.txt
+.omo/evidence/ulw-clean-checkout-current-candidate.txt
+.omo/evidence/pre-real-log-clean-checkout-receipt.txt
+```
+
+### 남은 gap 또는 다음 작업
+
+- final aggregate quality gate는 `.omo/evidence/ulw-final-quality-gate.md`에서 `FINAL_RESULT=PASS`로 완료됐다.
+- final reviewer는 `.omo/evidence/ulw-final-reviewer.md`에서 blocking finding 없이 승인됐다.
+- ULW final checkpoint는 `.omo/evidence/ulw-quality-gate.json`과 `.omo/evidence/ulw-codex-goal-complete.json`을 포함해 `ok=true`로 완료됐다.
+- `pre-real-log-evaluator-v0` tag는 생성하지 않았다.
+- 실제 external/partner robot log, real robot run, hardware readiness, live UR/RTDE, live Franka, live ROS2/DDS bridge, policy uplift, production readiness, marketplace readiness는 검증하거나 claim하지 않았다.
+
+## 2026-07-03 - ULW final checkpoint closure 기록
+
+### 작업 내용
+
+- review-work blocker closure ULW session `.omo/ulw-loop/019f1e58-52f7-7921-a6c3-a699f3035dbe`의 `G001`-`G004`를 모두 `complete`로 닫았다.
+- final checkpoint에 `codeReview`, `manualQa`, `gateReview`, `iteration`, `criteriaCoverage`를 포함한 `.omo/evidence/ulw-quality-gate.json`을 연결했다.
+- post-gate 문서 수정 이후 durable clean-checkout candidate를 `a878431f40c60c4e09e8cff34e6367a939946ffd`로 갱신하고, `.omo/evidence/ulw-clean-checkout-current-candidate.txt`에 28개 manifest path hash-match를 기록했다.
+- gate reviewer follow-up approval을 `.omo/evidence/ulw-review-work-blocker-closure-post-candidate-refresh-gate-review.md`에 보존했다.
+- tag 생성, stage, commit, push, publish는 수행하지 않았다.
+
+### 판단 이유
+
+- 다른 세션이 `Handoff.md`, `docs/developer/worklog.md`, `.omo/ulw-loop/.../goals.json`, `.omo/evidence/*`만 읽고 최신 완료 상태를 재구성할 수 있어야 한다.
+- final checkpoint 직전의 문서 보강이 clean-checkout candidate SHA 이후에 발생했으므로, candidate를 다시 빌드해 current worktree와 release-scope manifest가 일치함을 증명했다.
+- release candidate readiness claim은 local pre-real-log file-drop evaluator readiness에 한정하고, 실제 external/partner log 또는 hardware/live/production claim으로 확장하지 않았다.
+
+### 변경 파일
+
+```text
+Handoff.md
+docs/developer/worklog.md
+.omo/evidence/ulw-quality-gate.json
+.omo/evidence/ulw-codex-goal-complete.json
+.omo/evidence/ulw-clean-checkout-current-candidate.txt
+.omo/evidence/ulw-clean-checkout-stale-proof-replaced.txt
+.omo/evidence/ulw-clean-checkout-release-boundary.txt
+.omo/evidence/ulw-final-quality-gate.md
+.omo/evidence/ulw-review-work-blocker-closure-post-candidate-refresh-gate-review.md
+.omo/evidence/pre-real-log-clean-checkout-receipt.txt
+```
+
+### 실행한 검증 명령과 결과
+
+```text
+jq -r '.goals[] | [.id,.status] | @tsv' .omo/ulw-loop/019f1e58-52f7-7921-a6c3-a699f3035dbe/goals.json
+  -> G001 complete; G002 complete; G003 complete; G004 complete
+
+omo ulw-loop checkpoint --goal-id G001-modify-all-next-fix-goals-from-the-r --status complete --quality-gate-json .omo/evidence/ulw-quality-gate.json --codex-goal-json .omo/evidence/ulw-codex-goal-complete.json --json
+  -> ok=true; aggregate_completed ledger entry recorded
+
+bash scripts/blind_clean_checkout_dry_run.sh a878431f40c60c4e09e8cff34e6367a939946ffd .omo/evidence/pre-real-log-current-candidate.git
+  -> exit 0; DRY_RUN_RESULT=PASS; FAILS=0
+
+uv run python scripts/scan_pre_real_log_claim_boundaries.py docs apps/web scripts README.md docs/developer/pre_real_log_evaluator_release_candidate_checklist.md --json
+  -> ok=true; issue_count=0; scanned_file_count=128
+
+git tag --list | rg '^pre-real-log-evaluator-v0$'
+  -> exit 1; expected absence; tag was not created
+
+git diff --cached --name-only
+  -> empty; no staged files
+```
+
+### 남은 gap 또는 다음 작업
+
+- release-scope 파일을 Lore protocol 기준으로 commit 분리하는 작업은 아직 수행하지 않았다.
+- `pre-real-log-evaluator-v0` tag 생성/push/publish는 사용자의 별도 명시 명령이 있을 때만 수행한다.
+- 실제 external/partner robot log, real robot run, hardware readiness, live UR/RTDE, live Franka, live ROS2/DDS bridge, policy uplift, production readiness, marketplace readiness는 검증하거나 claim하지 않았다.

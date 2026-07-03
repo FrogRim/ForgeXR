@@ -45,6 +45,7 @@ output.txt
 Handoff.md
 docs/WORKLOG.md
 .omc/
+.omo/
 .omx/
 .understand-anything/
 postwrite/
