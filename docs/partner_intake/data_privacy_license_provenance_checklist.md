@@ -1,10 +1,10 @@
-# Data privacy, license, and provenance checklist
+# Data privacy, license, provenance checklist
 
-Use this checklist before evaluating a partner or external file-drop.
+partner 또는 external file-drop을 평가하기 전에 이 checklist를 먼저 확인한다.
 
 ## Provenance
 
-Record:
+아래 항목을 기록한다.
 
 ```text
 source owner
@@ -19,11 +19,13 @@ whether data is partner/external supplied
 whether data can be redistributed in a small verifier package
 ```
 
-RDF can verify included file consistency, schema, semantics, package hashes, and verifier recomputation. RDF cannot cryptographically prove that a self-supplied file truly came from a physical robot without external attestation.
+RDF는 포함된 file consistency, schema, semantics, package hash, verifier
+recomputation을 검증할 수 있다. external attestation 없이 self-supplied file이
+실제 physical robot에서 왔다는 사실을 암호학적으로 증명하지는 못한다.
 
-## License and permission
+## License와 permission
 
-Before committing or sharing any file-drop, confirm:
+file-drop을 commit하거나 공유하기 전에 아래 항목을 확인한다.
 
 ```text
 permission to inspect locally
@@ -36,11 +38,14 @@ license name or contract reference
 data retention limit
 ```
 
-If redistribution is not allowed, keep source rows outside tracked `docs/proof/` and produce only hash-locked local receipts. Do not claim external reviewer recomputation from private rows unless the rows are included or separately accessible to that reviewer.
+redistribution이 허용되지 않으면 source row를 tracked `docs/proof/` 밖에 두고
+hash-locked local receipt만 만든다. row가 package에 포함되어 있거나 reviewer가
+별도로 접근할 수 있는 경우가 아니면 private row에 대한 external reviewer
+recomputation을 claim하지 않는다.
 
 ## Privacy
 
-Check whether the drop includes:
+drop에 아래 항목이 포함되는지 확인한다.
 
 ```text
 camera images
@@ -54,23 +59,26 @@ controller serial numbers
 operator names
 ```
 
-If privacy status is unknown, do not publish the data. Use local-only evaluation and record the limitation.
+privacy status를 알 수 없으면 data를 publish하지 않는다. local-only evaluation을
+사용하고 limitation을 기록한다.
 
 ## Claim boundary
 
-Allowed after a successful local file-drop evaluation:
+성공적인 local file-drop evaluation 이후 허용되는 표현:
 
 ```text
 RDF evaluated this supplied file-drop against an explicit profile and produced verifier-backed local artifacts.
 ```
 
-Not allowed without additional proof:
+추가 proof 없이 허용되지 않는 표현:
 
 ```text
 real robot success
 hardware readiness
-live runtime support
+live UR/RTDE support
+live Franka support
+live ROS2/DDS bridge readiness
 policy uplift
 production certification
-universal robot support
+marketplace readiness
 ```

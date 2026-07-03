@@ -1,12 +1,12 @@
-# UR RTDE-style file-drop request
+# UR RTDE-style file-drop 요청서
 
-Profile id:
+`Profile id`:
 
 ```text
 ur_rtde_csv_v0
 ```
 
-Current RDF alpha model:
+현재 RDF alpha model:
 
 ```text
 robot_family=universal_robots
@@ -16,14 +16,14 @@ action_semantics=target_q_command
 state_semantics=actual_q_state
 ```
 
-## Required files
+## 요청 파일
 
 ```text
 metadata.json
 rtde_output.csv
 ```
 
-## Required metadata
+## 요청 metadata
 
 ```json
 {
@@ -49,7 +49,7 @@ rtde_output.csv
 }
 ```
 
-## Required CSV columns
+## 요청 CSV column
 
 ```text
 timestamp
@@ -63,34 +63,35 @@ robot_mode
 safety_status
 ```
 
-`joint_names`, `actual_q`, `target_q`, TCP pose, and TCP speed must be JSON array strings inside the CSV cell.
+`joint_names`, `actual_q`, `target_q`, TCP pose, TCP speed는 CSV cell 안에서
+JSON array string으로 제공해야 한다.
 
-## Clean data expectations
+## Clean data 기대 조건
 
 ```text
-timestamps are finite and strictly monotonic
-timestamp gaps are within the profile threshold
-joint order exactly matches metadata.joint_names
-actual_q and target_q are 6D radian vectors
-TCP position is meters, not millimeters
-TCP rotation is rotation-vector radians
-robot_mode == RUNNING for clean training-eligible rows
-safety_status == NORMAL for clean training-eligible rows
-target_q is the command/action, actual_q is the state
+timestamp는 finite 값이고 strictly monotonic이어야 한다.
+timestamp gap은 profile threshold 안에 있어야 한다.
+joint 순서는 metadata.joint_names와 정확히 일치해야 한다.
+actual_q와 target_q는 6D radian vector여야 한다.
+TCP position 단위는 millimeter가 아니라 meter여야 한다.
+TCP rotation은 rotation-vector radian이어야 한다.
+clean training-eligible row에서는 robot_mode == RUNNING이어야 한다.
+clean training-eligible row에서는 safety_status == NORMAL이어야 한다.
+target_q는 command/action이고 actual_q는 state여야 한다.
 ```
 
-## Expected rejection examples
+## 예상 rejection 예시
 
 ```text
-missing actual_q
-wrong joint dimension
-joint order swapped
-degree/radian unit confusion
-millimeter/meter TCP confusion
+actual_q 누락
+joint dimension 불일치
+joint 순서 뒤바뀜
+degree/radian 단위 혼동
+millimeter/meter TCP 단위 혼동
 non-monotonic timestamp
-large timestamp gap
-protective stop or not-running robot mode
-target/actual lag above threshold
-fabricated task_success field
-external claim metadata that does not match supported evidence
+큰 timestamp gap
+protective stop 또는 running 상태가 아닌 robot_mode
+threshold를 초과한 target/actual lag
+조작된 task_success field
+지원 evidence와 맞지 않는 external claim metadata
 ```

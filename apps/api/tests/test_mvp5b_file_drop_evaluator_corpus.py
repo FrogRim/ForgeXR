@@ -22,6 +22,7 @@ ROOT = Path(__file__).resolve().parents[3]
 CLI = ROOT / "scripts" / "rdf_file_drop_evaluator.py"
 VERIFIER = ROOT / "scripts" / "verify_rdf_file_drop_evaluator_run.py"
 ARTIFACT_ROOT = ROOT / "artifacts" / "rdf_file_drop_evaluator"
+SAMPLE_DROPS = ROOT / "docs" / "partner_intake" / "sample_drops"
 
 
 def _run(script: Path, *args: str | Path) -> tuple[int, dict]:
@@ -128,3 +129,62 @@ def test_corrupt_zip_fails_with_structured_reason_and_no_export(tmp_path: Path) 
     assert payload["passed"] is False
     assert mutation.expected_rejection_reason in payload["rejection_reasons"]
     assert not (run_dir / "export" / "dataset.hdf5").exists()
+
+
+def test_committed_sample_drops_cover_accept_and_reject_paths(tmp_path: Path) -> None:
+    accepted_drop = SAMPLE_DROPS / "ur_rtde_csv_v0" / "accepted_minimal"
+    rejected_drop = SAMPLE_DROPS / "ur_rtde_csv_v0" / "rejected_missing_metadata"
+    assert (SAMPLE_DROPS / "README.md").exists()
+    assert accepted_drop.exists()
+    assert rejected_drop.exists()
+
+    accepted_run = _managed_run_dir(tmp_path, "committed-sample-accepted")
+    accepted_rc, accepted_payload = _run(
+        CLI,
+        "evaluate",
+        accepted_drop,
+        "--profile",
+        "ur_rtde_csv_v0",
+        "--out",
+        accepted_run,
+        "--force",
+        "--json",
+    )
+    assert accepted_rc == 0
+    assert accepted_payload["passed"] is True
+    assert accepted_payload["frame_count"] == 12
+    assert (accepted_run / "export" / "dataset.hdf5").exists()
+    accepted_verify_rc, accepted_verify_payload = _run(
+        VERIFIER,
+        accepted_run / "package_manifest.json",
+        "--deep-hdf5",
+        "--json",
+    )
+    assert accepted_verify_rc == 0, accepted_verify_payload
+    assert accepted_verify_payload["verdict"] == "VERIFIED"
+    assert accepted_verify_payload["passed"] is True
+
+    rejected_run = _managed_run_dir(tmp_path, "committed-sample-rejected")
+    rejected_rc, rejected_payload = _run(
+        CLI,
+        "evaluate",
+        rejected_drop,
+        "--profile",
+        "ur_rtde_csv_v0",
+        "--out",
+        rejected_run,
+        "--force",
+        "--json",
+    )
+    assert rejected_rc == 2
+    assert rejected_payload["passed"] is False
+    assert "schema_missing_required_artifact" in rejected_payload["rejection_reasons"]
+    assert not (rejected_run / "export" / "dataset.hdf5").exists()
+    rejected_verify_rc, rejected_verify_payload = _run(
+        VERIFIER,
+        rejected_run / "package_manifest.json",
+        "--json",
+    )
+    assert rejected_verify_rc == 0, rejected_verify_payload
+    assert rejected_verify_payload["verdict"] == "VERIFIED"
+    assert rejected_verify_payload["passed"] is False

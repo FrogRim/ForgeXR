@@ -1,25 +1,26 @@
 # File-drop triage runbook
 
-This runbook is for the first hour after receiving a recorded robot log folder or zip.
+이 runbook은 recorded robot log folder 또는 zip을 받은 뒤 첫 1시간 동안의
+triage 절차를 정의한다.
 
-## 1. Preserve original files
+## 1. 원본 파일 보존
 
 ```bash
 mkdir -p /tmp/rdf_partner_drop/original
 cp -a /path/from/partner/. /tmp/rdf_partner_drop/original/
 ```
 
-Do not rename source files until the original hash is recorded.
+original hash를 기록하기 전에는 source file 이름을 바꾸지 않는다.
 
-## 2. Choose the profile explicitly
+## 2. Profile 명시 선택
 
-Use the supported profile list.
+지원 profile list를 먼저 확인한다.
 
 ```bash
 uv run python scripts/rdf_file_drop_evaluator.py profiles list --json
 ```
 
-If no profile fits, stop. Do not auto-detect a trusted profile.
+맞는 profile이 없으면 중단한다. trusted profile을 자동 탐지하지 않는다.
 
 ## 3. Preflight
 
@@ -30,9 +31,10 @@ uv run python scripts/rdf_file_drop_evaluator.py preflight \
   --json
 ```
 
-If preflight fails, keep the result and rejection reasons. Do not edit source files to make them pass unless the partner confirms the correction.
+preflight가 실패하면 result와 rejection reason을 보존한다. partner가 correction을
+확인하기 전에는 source file을 통과시키기 위해 수정하지 않는다.
 
-## 4. Evaluate
+## 4. Evaluate 실행
 
 ```bash
 uv run python scripts/rdf_file_drop_evaluator.py evaluate \
@@ -42,9 +44,10 @@ uv run python scripts/rdf_file_drop_evaluator.py evaluate \
   --json
 ```
 
-Rejected runs are still useful. They should preserve raw evidence and structured rejection reasons, but must not become training eligible.
+rejected run도 유용한 evidence다. raw evidence와 structured rejection reason은
+보존하되 training eligible로 승격하면 안 된다.
 
-## 5. Verify
+## 5. Verify 실행
 
 ```bash
 uv run python scripts/rdf_file_drop_evaluator.py verify \
@@ -53,21 +56,22 @@ uv run python scripts/rdf_file_drop_evaluator.py verify \
   --json
 ```
 
-The verifier result is the local source of truth. Do not override it from a buyer report, UI state, or cached summary.
+verifier result가 local source of truth다. buyer report, UI state, cached summary로
+verifier result를 override하지 않는다.
 
-## 6. Inspect buyer report
+## 6. Buyer report 확인
 
-Open:
+아래 report를 연다.
 
 ```text
 artifacts/rdf_file_drop_evaluator/<run_id>/reports/buyer_report.html
 ```
 
-The report must include non-claims and rejection reasons when applicable.
+report에는 필요한 경우 non-claim과 rejection reason이 포함되어야 한다.
 
-## 7. Escalate only with evidence
+## 7. Evidence와 함께 escalation
 
-If the file-drop fails, send the partner:
+file-drop이 실패하면 partner에게 아래 정보를 보낸다.
 
 ```text
 profile_id used
@@ -79,11 +83,11 @@ unit/dimension/timestamp mismatch evidence
 privacy/license blockers if present
 ```
 
-Do not send a broad "data bad" message without the structured evidence.
+structured evidence 없이 넓은 의미의 "data bad" 메시지를 보내지 않는다.
 
-## 8. Stop conditions
+## 8. Stop condition
 
-Stop if:
+아래 조건이면 중단한다.
 
 ```text
 profile is unknown

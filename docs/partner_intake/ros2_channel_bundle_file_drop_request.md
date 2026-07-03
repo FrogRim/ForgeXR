@@ -1,12 +1,12 @@
-# ROS2 channel-bundle file-drop request
+# ROS2 channel-bundle file-drop 요청서
 
-Profile id:
+`Profile id`:
 
 ```text
 ros2_channel_bundle_jsonl_v0
 ```
 
-Current RDF alpha model:
+현재 RDF alpha model:
 
 ```text
 robot_family=ros2_simulated_manipulator
@@ -16,9 +16,10 @@ action_semantics=command_topic_target_joint_state
 state_semantics=joint_states_topic_actual_state
 ```
 
-This is a JSONL channel-bundle rehearsal profile. It is not a live ROS2/DDS bridge claim and is not an MCAP binary parser.
+이 profile은 JSONL channel-bundle rehearsal profile이다. live ROS2/DDS bridge
+claim도 아니고 MCAP binary parser claim도 아니다.
 
-## Required files
+## 요청 파일
 
 ```text
 metadata.json
@@ -29,9 +30,9 @@ topics/tf_static.jsonl
 topics/command.jsonl
 ```
 
-## Required topics
+## 요청 topic
 
-`topic_manifest.json` must list exactly:
+`topic_manifest.json`은 아래 topic을 정확히 나열해야 한다.
 
 ```text
 /joint_states
@@ -40,7 +41,7 @@ topics/command.jsonl
 /command
 ```
 
-## Required message fields
+## 요청 message field
 
 `topics/joint_states.jsonl`:
 
@@ -74,31 +75,31 @@ target_position
 frame_id
 ```
 
-## Clean data expectations
+## Clean data 기대 조건
 
 ```text
-joint_states.name matches expected joint_names exactly
-joint_states.position is 6D radians
-tf timestamps align with joint state timestamps
-command timestamps align with joint state timestamps
-tf_static exists
-required frame ids include world, base_link, tool0
-base frame does not drift inside one trajectory
-command target is action, joint_states.position is state
+joint_states.name은 expected joint_names와 정확히 일치해야 한다.
+joint_states.position은 6D radian이어야 한다.
+tf timestamp는 joint state timestamp와 정렬되어야 한다.
+command timestamp는 joint state timestamp와 정렬되어야 한다.
+tf_static이 있어야 한다.
+required frame id에는 world, base_link, tool0가 포함되어야 한다.
+base frame은 하나의 trajectory 안에서 drift하면 안 된다.
+command target은 action이고 joint_states.position은 state여야 한다.
 ```
 
-## Expected rejection examples
+## 예상 rejection 예시
 
 ```text
-missing /joint_states
-missing /tf
-missing /tf_static
-missing /command
-missing frame_id
-wrong joint names
-wrong dimensions
+/joint_states 누락
+/tf 누락
+/tf_static 누락
+/command 누락
+frame_id 누락
+joint name 불일치
+dimension 불일치
 topic timestamp mismatch
 base frame drift
-command/state lag above threshold
-fabricated task_success field
+threshold를 초과한 command/state lag
+조작된 task_success field
 ```
