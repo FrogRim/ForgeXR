@@ -44,6 +44,18 @@ def test_preflight_zip_path_traversal_fails_closed(tmp_path: Path) -> None:
     assert "path_traversal" in payload["rejection_reasons"]
 
 
+def test_preflight_malformed_zip_fails_closed(tmp_path: Path) -> None:
+    zip_path = tmp_path / "malformed.zip"
+    zip_path.write_text("not a zip\n", encoding="utf-8")
+
+    rc, payload = _run_cli("preflight", zip_path, "--profile", "ur_rtde_csv_v0", "--json")
+
+    assert rc != 0
+    assert payload["ok"] is False
+    assert payload["passed"] is False
+    assert "malformed_input" in payload["rejection_reasons"]
+
+
 def test_preflight_zip_absolute_path_fails_closed(tmp_path: Path) -> None:
     zip_path = tmp_path / "absolute.zip"
     with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:

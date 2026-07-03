@@ -188,3 +188,98 @@ Treat that document as the project-level source of truth for:
 Do not implement features that the project instructions mark as MVP-excluded or post-MVP unless the user explicitly updates the project instructions.
 
 When responding after code changes, follow the output format in `docs/developer/project_instructions.md`.
+
+---
+
+# PROJECT KNOWLEDGE BASE
+
+**Generated:** 2026-07-02
+**Commit:** 41b5bbc
+**Branch:** main
+
+## OVERVIEW
+
+Robot Data Forge is a validated robot-learning data infrastructure repo. It turns raw robot-action trajectory evidence into replay-verified, action-labelled, task-validated, trainer-loadable dataset artifacts and buyer-facing trust records.
+
+Primary stack: FastAPI/Python/SQLAlchemy/Alembic backend, Next.js/TypeScript frontend, local filesystem evidence storage, `uv` for Python workflows, `npm` for web workflows.
+
+## STRUCTURE
+
+```text
+robot-data-forge/
+├── apps/api/          # FastAPI app, SQLAlchemy models, Alembic migrations, evaluator/curator/export services
+├── apps/web/          # Next.js app router UI for tasks, episodes, datasets, admin KPIs, file-drop alpha
+├── scripts/           # Proof, verifier, ingest, export, runtime, and diagnostic CLIs
+├── docs/              # Korean-first developer, buyer, partner, proof, and desktop documentation
+├── packages/shared/   # Shared trajectory/dataset JSON schema contracts
+├── fixtures/          # Small input fixtures
+├── storage/           # Local generated proof/output data; do not treat as source contract
+├── artifacts/         # Test/evaluator outputs; do not promote to claims without verifier evidence
+└── tasks/             # Planning/todo state; Handoff.md remains the session transfer source
+```
+
+## WHERE TO LOOK
+
+| Task | Location | Notes |
+|---|---|---|
+| Current state / next work | `Handoff.md` | Read before implementation; update after work. |
+| Product scope / stop rules | `docs/developer/project_instructions.md` | Source of truth for MVP, no-go, and claim boundaries. |
+| API entrypoint | `apps/api/app/main.py` | Registers `/health` and all `/api/*` routers. |
+| Backend domain logic | `apps/api/app/services/` | `evaluator.py`, `curator.py`, `exporter.py`, `dataset_card.py`, `sync.py`, `usability.py`. |
+| Persistent contracts | `apps/api/app/models/`, `apps/api/app/schemas/`, `apps/api/alembic/` | Keep DB, Pydantic, and migration changes aligned. |
+| Frontend API client | `apps/web/lib/api.ts` | UI calls FastAPI; UI must not compute trust verdicts. |
+| File-drop alpha | `apps/api/app/routers/file_drop.py`, `scripts/rdf_file_drop_evaluator.py`, `apps/web/app/file-drop/page.tsx` | CLI/verifier is source of truth; web displays evidence. |
+| Proof/verifier CLIs | `scripts/run_*`, `scripts/verify_*` | Prefer independent verifier paths for buyer-facing claims. |
+| Partner intake | `docs/partner_intake/` | No actual external partner log claim unless evidence exists. |
+| Shared schemas | `packages/shared/*.json` | Keep compatible with API trajectory/dataset contracts. |
+
+## CODE MAP
+
+| Symbol / File | Type | Location | Role |
+|---|---|---|---|
+| `app` | FastAPI app | `apps/api/app/main.py` | API composition root and router registration. |
+| `select_collection_adapter` | function | `apps/api/app/adapters/factory.py` | `IsaacLabAdapter` primary, `MockSimAdapter` fallback. |
+| `evaluate_trajectory` / evaluator services | service | `apps/api/app/services/evaluator.py` | ForgeEval scoring, success/failure, taxonomy. |
+| `curate_episodes_with_reasons` | service | `apps/api/app/services/curator.py` | ForgeCurate acceptance/rejection manifest logic. |
+| `export_dataset` | service | `apps/api/app/services/exporter.py` | JSON/HDF5/LeRobot export surface. |
+| `build_dataset_card` | service | `apps/api/app/services/dataset_card.py` | Buyer-facing dataset card generation. |
+| `router` | FastAPI routers | `apps/api/app/routers/*.py` | OpenAPI-visible request/response surface. |
+| `API_BASE_URL`, `request` | frontend API client | `apps/web/lib/api.ts` | Browser-to-FastAPI boundary. |
+| `rdf_file_drop_evaluator.py` | CLI | `scripts/rdf_file_drop_evaluator.py` | File-drop preflight/evaluate/verify producer path. |
+| `verify_rdf_file_drop_evaluator_run.py` | CLI | `scripts/verify_rdf_file_drop_evaluator_run.py` | Independent file-drop verifier. |
+
+## CONVENTIONS
+
+- `docs/` Markdown defaults to Korean; code identifiers, API paths, JSON keys, commands, model names, and file paths stay in English.
+- Preserve source/runtime metadata: `schema_version`, `source.input_device`, `source.runtime`, `source.simulator`, `source.robot`, `source.task_name`.
+- Separate task success, data quality, replay/action contract, and training eligibility.
+- Every accepted/rejected trajectory needs reason evidence in curation or verifier output.
+- `Handoff.md` is compact state transfer; `docs/developer/worklog.md` is detailed execution log.
+- Use `uv run pytest -q` for backend regression, `uvx ruff check scripts apps/api` for lint, and `npm run lint/build` inside `apps/web` for frontend checks.
+
+## ANTI-PATTERNS
+
+- Do not implement payments, rewards, marketplace, real robot control, CloudXR, production auth, full RL, autonomous driving, or humanoid scope.
+- Do not present `MockSimAdapter`, web mock tasks, generated fixtures, or digital-twin samples as actual external/partner robot logs.
+- Do not let UI, docs, or desktop shell compute or imply trust verdicts; verifier/CLI evidence owns PASS/FAIL.
+- Do not reuse spent held-out seed ranges for tuning or future closure proof.
+- Do not store credentials or customer private data in repo artifacts.
+- Do not silently accept unsupported export formats or missing metadata.
+
+## COMMANDS
+
+```bash
+uv sync --group dev
+uv run pytest -q
+uvx ruff check scripts apps/api
+uv run python -m compileall -q apps/api/app apps/api/tests scripts
+DATABASE_URL=sqlite:///./rdf_dev.db uv run uvicorn app.main:app --app-dir apps/api --reload
+cd apps/web && npm run lint
+cd apps/web && npm run build
+```
+
+## NOTES
+
+- Worktree may be dirty because the user and other agents share it; do not revert unrelated edits.
+- `.omx/state/sessions/*/AGENTS.md` files are runtime/session artifacts, not durable project guidance.
+- `storage/` and `artifacts/` are evidence/output trees; cite verifier packages before promoting any claim.

@@ -2,21 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import {
-  evaluateFileDrop,
-  listFileDropProfiles,
-  preflightFileDrop,
-  verifyFileDrop,
-} from "../../lib/api";
+import { evaluateFileDrop, listFileDropProfiles, preflightFileDrop, verifyFileDrop } from "../../lib/api";
 import type { FileDropBridgeResult, FileDropProfile } from "../../lib/types";
 
 type Stage = "profiles" | "preflight" | "evaluate" | "verify";
 
-type StageState = {
-  loading: boolean;
-  error?: string;
-  response?: FileDropBridgeResult;
-};
+type DisplayArtifacts = Readonly<Record<string, string>>;
+type DisplayBridgeResult = FileDropBridgeResult & { readonly display_artifacts?: DisplayArtifacts };
+type StageState = { loading: boolean; error?: string; response?: DisplayBridgeResult };
 
 const EMPTY_STAGE: StageState = { loading: false };
 
@@ -31,6 +24,10 @@ function stringList(value: unknown): string[] {
   return Array.isArray(value) ? value.map((item) => textValue(item)).filter(Boolean) : [];
 }
 
+function isStringRecord(value: unknown): value is Readonly<Record<string, string>> {
+  return typeof value === "object" && value !== null && !Array.isArray(value) && Object.values(value).every((item) => typeof item === "string");
+}
+
 function resultField(response: FileDropBridgeResult | undefined, field: string): unknown {
   return response?.result?.[field];
 }
@@ -43,12 +40,33 @@ function verifierAccepted(response: FileDropBridgeResult | undefined): boolean {
   return verifierVerified(response) && response?.result?.passed === true;
 }
 
+function PathLine({ label, value }: { label: string; value: string }) {
+  if (!value) return null;
+  return <p><span className="muted">{label} </span><code>{value}</code></p>;
+}
+
+function ResultList({ title, items }: { title: string; items: readonly string[] }) {
+  if (!items.length) return null;
+  return (
+    <div>
+      <p className="muted">{title}</p>
+      <ul className="file-drop-list">
+        {items.map((item) => <li key={`${title}-${item}`}>{item}</li>)}
+      </ul>
+    </div>
+  );
+}
+
 function BridgeStatus({ title, state, verifyStage = false }: { title: string; state: StageState; verifyStage?: boolean }) {
   const response = state.response;
   const rejectionReasons = stringList(resultField(response, "rejection_reasons"));
   const failedChecks = stringList(resultField(response, "failed_checks"));
   const runDir = textValue(resultField(response, "run_dir"));
   const manifest = textValue(resultField(response, "package_manifest"));
+  const artifactValue = response?.display_artifacts;
+  const displayArtifacts = isStringRecord(artifactValue) ? artifactValue : undefined;
+  const buyerReportHtml = displayArtifacts?.buyer_report_html ?? "";
+  const buyerReportJson = displayArtifacts?.buyer_report_json ?? "";
   const verified = verifyStage && verifierVerified(response);
   const accepted = verifyStage && verifierAccepted(response);
   const statusClass = accepted ? "good" : verified ? "neutral" : response?.ok ? "neutral" : "bad";
@@ -64,22 +82,10 @@ function BridgeStatus({ title, state, verifyStage = false }: { title: string; st
       {state.error ? <p className="danger-text">{state.error}</p> : null}
       {response ? (
         <div className="file-drop-result-grid">
-          <div>
-            <span className="muted">exit</span>
-            <strong>{response.exit_code ?? "timeout"}</strong>
-          </div>
-          <div>
-            <span className="muted">trust source</span>
-            <strong>{response.trust_source}</strong>
-          </div>
-          <div>
-            <span className="muted">bridge error</span>
-            <strong>{response.bridge_error ?? "none"}</strong>
-          </div>
-          <div>
-            <span className="muted">stdout cap</span>
-            <strong>{response.stdout_truncated ? "truncated" : "complete"}</strong>
-          </div>
+          <div><span className="muted">exit</span><strong>{response.exit_code ?? "timeout"}</strong></div>
+          <div><span className="muted">trust source</span><strong>{response.trust_source}</strong></div>
+          <div><span className="muted">bridge error</span><strong>{response.bridge_error ?? "none"}</strong></div>
+          <div><span className="muted">stdout cap</span><strong>{response.stdout_truncated ? "truncated" : "complete"}</strong></div>
           {verifyStage ? (
             <div>
               <span className="muted">data verdict</span>
@@ -88,34 +94,12 @@ function BridgeStatus({ title, state, verifyStage = false }: { title: string; st
           ) : null}
         </div>
       ) : null}
-      {runDir ? (
-        <p>
-          <span className="muted">run dir </span>
-          <code>{runDir}</code>
-        </p>
-      ) : null}
-      {manifest ? (
-        <p>
-          <span className="muted">manifest </span>
-          <code>{manifest}</code>
-        </p>
-      ) : null}
-      {rejectionReasons.length ? (
-        <div>
-          <p className="muted">rejection reasons</p>
-          <ul className="file-drop-list">
-            {rejectionReasons.map((reason) => <li key={reason}>{reason}</li>)}
-          </ul>
-        </div>
-      ) : null}
-      {failedChecks.length ? (
-        <div>
-          <p className="muted">failed verifier checks</p>
-          <ul className="file-drop-list">
-            {failedChecks.map((check) => <li key={check}>{check}</li>)}
-          </ul>
-        </div>
-      ) : null}
+      <PathLine label="run dir" value={runDir} />
+      <PathLine label="manifest" value={manifest} />
+      <PathLine label="buyer report html" value={buyerReportHtml} />
+      <PathLine label="buyer report json" value={buyerReportJson} />
+      <ResultList title="rejection reasons" items={rejectionReasons} />
+      <ResultList title="failed verifier checks" items={failedChecks} />
       {response ? (
         <details>
           <summary>Command and JSON</summary>
