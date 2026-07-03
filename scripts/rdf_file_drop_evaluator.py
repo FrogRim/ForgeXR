@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# allow: SIZE_OK - release-critical CLI is oversized; split post-gate while tests/QA lock fail-closed behavior.
 """Local RDF file-drop evaluator CLI.
 
 This alpha CLI is a product surface over the existing MVP-5A profile
@@ -183,6 +184,8 @@ def _resolve_input(input_path: Path, temp_root: Path) -> tuple[Path, str, list[s
             _safe_extract_zip(input_path, extract_dir)
         except CliError as exc:
             return extract_dir, "zip", [exc.reason]
+        except zipfile.BadZipFile:
+            return extract_dir, "zip", ["malformed_input"]
         return extract_dir, "zip", _scan_folder_safety(extract_dir)
     return input_path, "unsupported", ["unsupported_input_kind"]
 

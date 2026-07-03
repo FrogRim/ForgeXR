@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -21,7 +22,7 @@ CLI = ROOT / "scripts" / "rdf_file_drop_evaluator.py"
 ARTIFACT_ROOT = ROOT / "artifacts" / "rdf_file_drop_evaluator"
 
 
-def _run_cli(*args: str | Path) -> tuple[int, dict]:
+def _run_cli(*args: str | Path, env: dict[str, str] | None = None) -> tuple[int, dict]:
     completed = subprocess.run(
         [sys.executable, str(CLI), *[str(arg) for arg in args]],
         cwd=ROOT,
@@ -29,6 +30,7 @@ def _run_cli(*args: str | Path) -> tuple[int, dict]:
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
+        env=env,
     )
     try:
         payload = json.loads(completed.stdout)
@@ -180,6 +182,22 @@ def test_doctor_reports_local_readiness_without_external_runtime() -> None:
     assert payload["checks"]["verifier_exists"] is True
     assert payload["checks"]["profile_registry_exact"] is True
     assert payload["checks"]["no_external_runtime_required"] is True
+    assert payload["external_partner_data_evaluated"] is False
+    assert payload["real_robot_data_evaluated"] is False
+    assert payload["hardware_readiness"] is False
+
+
+def test_doctor_fails_closed_when_artifact_root_escapes_repo(tmp_path: Path) -> None:
+    env = {
+        **os.environ,
+        "RDF_FILE_DROP_EVALUATOR_ARTIFACT_ROOT": str(tmp_path / "outside"),
+    }
+
+    rc, payload = _run_cli("doctor", "--json", env=env)
+
+    assert rc == 2
+    assert payload["ok"] is False
+    assert payload["checks"]["artifact_root_under_repo"] is False
     assert payload["external_partner_data_evaluated"] is False
     assert payload["real_robot_data_evaluated"] is False
     assert payload["hardware_readiness"] is False
